@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+pydantic
+selenium
+pandas
+streamlit
+requests
+python-dateutil
+pillow
+pytesseract
+opencv-python
+easyocr
