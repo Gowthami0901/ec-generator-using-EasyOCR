@@ -656,7 +656,6 @@ def process_captcha_with_retry(driver, max_attempts=3):
         attempt += 1
         print(f"\n--- Captcha attempt {attempt}/{max_attempts} ---")
         
-        # Get the captcha image and solve it with advanced techniques
         try:
             # Find captcha image
             captcha_element = None
@@ -752,29 +751,45 @@ def process_captcha_with_retry(driver, max_attempts=3):
                     print("Could not refresh captcha, will try with new captcha")
             else:
                 print(f"Captcha appears to be accepted on attempt {attempt}")
-                # Look for "Click here" button and click it if found
+                
+                # Wait for the success page to load
+                time.sleep(5)
+                
                 try:
-                    # Various ways to find "Click here" links
-                    click_here_links = driver.find_elements(By.XPATH, "//a[contains(text(), 'Click here') or contains(text(), 'click here')] | //a[contains(@href, 'click')]")
-                    if click_here_links:
-                        for link in click_here_links:
-                            if link.is_displayed():
-                                print("Found 'Click here' link. Clicking it.")
-                                link.click()
-                                time.sleep(3)
-                                return True
-                    
-                    # Also try buttons
-                    click_here_buttons = driver.find_elements(By.XPATH, "//button[contains(text(), 'Click here') or contains(text(), 'click here')]")
-                    if click_here_buttons:
-                        for button in click_here_buttons:
-                            if button.is_displayed():
-                                print("Found 'Click here' button. Clicking it.")
-                                button.click()
-                                time.sleep(3)
-                                return True
+                    # Look for the specific PDF download link with the exact structure
+                    pdf_link = driver.find_element(By.XPATH, "//a[contains(@href, 'webHP?requestType=ApplicationRH&actionVal=dwnloadPdf&screenId=700786')]")
+                    if pdf_link.is_displayed():
+                        print("Found PDF download link. Clicking it.")
+                        pdf_link.click()
+                        time.sleep(5)  # Wait for download to start
+                        
+                        # Look for and click OK button if present
+                        try:
+                            ok_buttons = driver.find_elements(By.XPATH, "//button[contains(text(), 'OK')] | //input[@value='OK'] | //a[contains(text(), 'OK')]")
+                            for button in ok_buttons:
+                                if button.is_displayed():
+                                    print("Clicking OK button")
+                                    button.click()
+                                    time.sleep(2)
+                                    break
+                        except:
+                            pass
+                            
+                        print("PDF download initiated successfully")
+                        return True
                 except Exception as e:
-                    print(f"Error finding 'Click here' link: {e}")
+                    print(f"Error clicking PDF download link: {e}")
+                    # Try alternative download methods
+                    try:
+                        # Look for red "Click here" link
+                        click_here = driver.find_element(By.XPATH, "//span[@style='color: red' and contains(text(), 'Click here')]")
+                        if click_here.is_displayed():
+                            print("Found red 'Click here' link. Clicking it.")
+                            click_here.click()
+                            time.sleep(5)
+                            return True
+                    except:
+                        pass
                 
                 return True
         
@@ -1133,14 +1148,13 @@ def run_automation(data):
                 
                 if download_success:
                     print("PDF download initiated successfully")
+                    # Wait for download to complete
+                    time.sleep(5)
                 else:
                     print("Could not find download button, but captcha was accepted")
                 
-                # Wait for download to complete
-                time.sleep(5)
-                
-                # Navigate back to home
-                driver.get("https://tnreginet.gov.in/portal/webHP?requestType=ApplicationRH&actionVal=homePage&screenId=114&UserLocaleID=en&_csrf=8a0e006a-0b81-4e3f-976e-9a8ee485b2ec")
+                # Navigate back to home using the specified XPath
+                driver.find_element(By.XPATH, "//a[contains(@href, 'webHP')]").click()
                 time.sleep(3)
             else:
                 print("Failed to solve captcha after 3 attempts")
